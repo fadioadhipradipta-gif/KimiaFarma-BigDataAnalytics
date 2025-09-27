@@ -1,4 +1,4 @@
---CREATE TABLE `rakamin-472807.kimia_farma.kf_analyzed_table` AS
+
 SELECT 
   final.transaction_id,
   final.date,
@@ -11,30 +11,33 @@ SELECT
   product.product_id, 
   product.product_name,
   product.price AS actual_price,
+  final.discount_percentage,
 
-  CAST(final.discount_percentage AS DECIMAL) AS discount_percentage,
+  CASE
+    WHEN product.price <= 50000 THEN 0.1
+    WHEN product.price BETWEEN 50001 AND 100000 THEN 0.15
+    WHEN product.price BETWEEN 100001 AND 300000 THEN 0.2
+    WHEN product.price BETWEEN 300001 AND 500000 THEN 0.25
+    ELSE 0.3
+  END AS persentase_gross_laba,
 
-  CAST(CASE 
-    WHEN product.price <= 50000 THEN 0.1 --10%
-    WHEN product.price > 50000 AND product.price <= 100000 THEN 0.15 --15%
-    WHEN product.price > 100000 AND product.price <= 300000 THEN 0.2 --20%
-    WHEN product.price > 300000 AND product.price <= 500000 THEN 0.25 --25%
-    WHEN product.price > 500000 THEN 0.3 --30%
-  END AS DECIMAL) AS persentase_gross_laba,
+  final.price * (1 - final.discount_percentage) AS nett_sales,
 
-  CAST(final.price*(1-final.discount_percentage) AS DECIMAL) AS nett_sales,
+  final.price * (1 - final.discount_percentage) * 
+  CASE
+    WHEN product.price <= 50000 THEN 0.1
+    WHEN product.price BETWEEN 50001 AND 100000 THEN 0.15
+    WHEN product.price BETWEEN 100001 AND 300000 THEN 0.2
+    WHEN product.price BETWEEN 300001 AND 500000 THEN 0.25
+    ELSE 0.3
+  END AS nett_profit,
 
-  CAST(final.price*(1-final.discount_percentage)* 
-  CASE 
-    WHEN product.price <=50000 THEN 0.1
-    WHEN product.price > 50000 AND product.price <= 100000 THEN 0.15
-    WHEN product.price > 100000 AND product.price <= 300000 THEN 0.2
-    WHEN product.price > 300000 AND product.price <= 500000 THEN 0.25
-    WHEN product.price > 500000 THEN 0.3
-  END AS DECIMAL) AS nett_profit,
-
-  CAST(final.rating AS DECIMAL) AS rating_transaksi
+ final.rating AS rating_transaksi
 
 FROM `rakamin-472807.kimia_farma.kf_final_transaction` final
-JOIN `rakamin-472807.kimia_farma.kf_kantor_cabang` kantor ON kantor.branch_id = final.branch_id
-JOIN `rakamin-472807.kimia_farma.kf_product` product ON product.product_id = final.product_id;
+
+JOIN `rakamin-472807.kimia_farma.kf_kantor_cabang` kantor 
+  ON kantor.branch_id = final.branch_id
+
+JOIN `rakamin-472807.kimia_farma.kf_product` product 
+  ON product.product_id = final.product_id;
